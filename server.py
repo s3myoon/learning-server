@@ -27,7 +27,13 @@ def handle_client(conn: socket.socket, addr: tuple[str, int]) -> None:
             return
 
         lines = data.decode().split("\r\n")
-        method, path, version = lines[0].split()
+        try:
+            method, path, version = lines[0].split()
+        except ValueError:
+            response = make_response("400 Bad Request", "Bad Request")
+            conn.sendall(response)
+            print(f"Client: {addr} 400 Bad Request {lines[0]!r}")
+            return
 
         print(addr, method, path)
 
@@ -46,8 +52,12 @@ def main() -> None:
 
         while True:
             conn, addr = server_socket.accept()
+            conn.settimeout(5)
             print("Connected:", addr)
-            handle_client(conn, addr)
+            try:
+                handle_client(conn, addr)
+            except Exception as err:
+                print(f"Client: {addr} {err!r}")
 
 
 if __name__ == "__main__":
